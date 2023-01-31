@@ -43,7 +43,7 @@ dependencies {
 }
 
 flyway {
-    url = 'jdbc:postgresql://localhost:5432/distribuidas'
+    url = 'jdbc:postgresql://localhost:5432/distribuida'
     user = 'postgres'
     password = 'admin'
     schemas = ['public']
