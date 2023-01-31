@@ -1,23 +1,42 @@
 version: '3'
-services:
-  postgres-sql:
-    image: postgres:alpine
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: distribuida
-    ports:
-      - 5433:5432
 
-  books-service:
-    image: jaimesalvador/examen:1.0.0
-    environment:
-      DB_USER: postgres
-      DB_PASSWORD: postgres
-      DB_URL: jdbc:postgresql://postgres-sql:5432/distribuida
-    depends_on:
-      - postgres-sql
-    deploy:
-      replicas: 1
+services:
+  proxy:
+    image: traefik
+    command: --web --providers.docker.domain=docker.localhost --logLevel=DEBUG
     ports:
-      - 7001:7001
+      - "80:80"
+      - "8081:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./traefik.yml:/etc/traefik/traefik.yml
+  postgres:
+    image: postgres:15
+    ports:
+      - "5432:5432"
+    environment:
+      - "POSTGRES_PASSWORD=postgres"
+
+  whoami:
+    image: nginx
+    labels:
+      - "traefik.backend=whoami"
+      - "traefik.http.routers.router0.rule=Host(`whoami.docker.localhost`)"
+      - "traefik.port=80"
+  books:
+    image: jaimesalvador/app-books:v1
+    labels:
+      - "traefik.backend=books"
+      - "traefik.http.routers.router0.rule=Host(`books.docker.localhost`)"
+      - "traefik.port=8080"
+  authors:
+    image: jaimesalvador/app-authors:v1
+    labels:
+      - "traefik.backend=authors"
+      - "traefik.http.routers.router0.rule=Host(`authors.docker.localhost`)"
+      - "traefik.port=8080"
+
+  web:
+    image: jaimesalvador/app-web:v1
+    ports:
+      - "8080:8080"
